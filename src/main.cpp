@@ -98,8 +98,26 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
+          auto coeffs = polyfit(ptsx, ptsy, 1);        
+          // The cross track error is calculated by evaluating at polynomial at x, f(x)
+          // and subtracting y.
+          double cte = polyeval(coeffs, px) - py;
+          // Due to the sign starting at 0, the orientation error is -f'(x).
+          // derivative of coeffs[0] + coeffs[1] * x -> coeffs[1]
+          double epsi = psi - atan(coeffs[1]);
+        
+          Eigen::VectorXd state(6);
+          state << x, y, psi, v, cte, epsi;
+
           double steer_value;
           double throttle_value;
+
+          vector<double> optimal_U;
+
+          optimal_U = mpc.Solve(state,coeffs);   
+
+          steer_value = optimal_U[0];
+          throttle_value = optimal_U[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
