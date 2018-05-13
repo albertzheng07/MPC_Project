@@ -113,7 +113,7 @@ int main() {
 
           //cout << "test" << endl;
 
-          auto coeffs = polyfit(fitx, fity, 1); // fit the polynomial error in the vehicle body frame       
+          auto coeffs = polyfit(fitx, fity, 2); // fit the polynomial error in the vehicle body frame       
           double cte = coeffs[0]; // current xtrack error 
           // Due to the sign starting at 0, the orientation error is -f'(x).
           // derivative of coeffs[0] + coeffs[1] * x -> coeffs[1]

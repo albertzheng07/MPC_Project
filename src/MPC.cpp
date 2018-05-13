@@ -103,8 +103,19 @@ class FG_eval {
       AD<double> delta_0 = vars[delta_start + t - 1];
       AD<double> a_0 = vars[a_start + t - 1];
 
-      AD<double> f_0 = coeffs[0]+coeffs[1]*x0; // y des
-      AD<double> psi_des = CppAD::atan(coeffs[1]); // psi des
+      // AD<double> f_0 = coeffs[0]+coeffs[1]*x0; // y des
+      // AD<double> psi_des = CppAD::atan(coeffs[1]); // psi des
+
+      AD<double> f_0 = 0.0;
+      for (int i = 0; i < coeffs.size(); i++) {
+        f_0 += coeffs[i] * CppAD::pow(x0, i);
+      }
+
+      AD<double> psi_des = 0.0;
+      for (int i = 1; i < coeffs.size(); i++) {
+        psi_des += i*coeffs[i] * CppAD::pow(x0, i-1); // f'(x0)
+      }
+      psi_des = CppAD::atan(psi_des);
 
       // Here's `x` to get you started.
       // The idea here is to constraint this value to be 0.
@@ -165,12 +176,12 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     vars[i] = 0;
   }
 
-  vars[x_start] = x;
-  vars[y_start] = y;
-  vars[psi_start] = psi;
-  vars[v_start] = v;
-  vars[cte_start] = cte;
-  vars[epsi_start] = epsi;
+  // vars[x_start] = x;
+  // vars[y_start] = y;
+  // vars[psi_start] = psi;
+  // vars[v_start] = v;
+  // vars[cte_start] = cte;
+  // vars[epsi_start] = epsi;
 
   Dvector vars_lowerbound(n_vars);
   Dvector vars_upperbound(n_vars);
@@ -188,7 +199,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     vars_upperbound[i] = 0.436;  // 25 deg
   }
 
-  for (i = a_start; i < a_start+N; i++)
+  for (i = a_start; i < n_vars; i++)
   {
     vars_lowerbound[i] = -1; 
     vars_upperbound[i] = 1; 
