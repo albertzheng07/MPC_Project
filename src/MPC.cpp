@@ -6,8 +6,8 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 10;
-double dt = 0.01;
+size_t N = 30;
+double dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -21,6 +21,17 @@ double dt = 0.01;
 // This is the length from front to CoG that has a similar radius.
 const double Lf = 2.67;
 
+double ref_v = 40;
+
+size_t x_start = 0;
+size_t y_start = x_start + N;
+size_t psi_start = y_start + N;
+size_t v_start = psi_start + N;
+size_t cte_start = v_start + N;
+size_t epsi_start = cte_start + N;
+size_t delta_start = epsi_start + N;
+size_t a_start = delta_start + N - 1;
+
 class FG_eval {
  public:
   // Fitted polynomial coefficients
@@ -29,30 +40,37 @@ class FG_eval {
 
   typedef CPPAD_TESTVECTOR(AD<double>) ADvector;
   void operator()(ADvector& fg, const ADvector& vars) {
-    // `fg` a vector of the cost constraints, `vars` is a vector of variable values (state & actuators)
-
-   // The cost is stored is the first element of `fg`.
+    // The cost is stored is the first element of `fg`.
     // Any additions to the cost should be added to `fg[0]`.
     fg[0] = 0;
 
+    // Reference State Cost
+    // TODO: Define the cost related the reference state and
+    // any anything you think may be beneficial.
+
     // Minimize reference error for t = 0 to t = N 
     for (int t = 0; t < N; t++) {
-      fg[0] += CppAD::pow(vars[cte_start+t],2);
-      fg[0] += CppAD::pow(vars[epsi+t],2);
-      fg[0] += CppAD::pow(fabs(ref_v-vars[v_start+t]),2);
+      fg[0] += 1000*CppAD::pow(vars[cte_start+t],2);
+      fg[0] += 1000*CppAD::pow(vars[epsi_start+t],2);
+      fg[0] += CppAD::pow(ref_v-vars[v_start+t],2);
     }  
 
     // Minimize actuator inputs for t = 0 to t = N - 1
     for (int t = 0; t < N-1; t++) {
-      fg[0] += CppAD::pow(vars[delta_start+t],2);
-      fg[0] += CppAD::pow(vars[a_start+t],2);
+      fg[0] += 500*CppAD::pow(vars[delta_start+t],2);
+      fg[0] += 100*CppAD::pow(vars[a_start+t],2);
     }  
 
     // Minimize actuator rate inputs for t = 0 to t = N - 2
     for (int t = 0; t < N-2; t++) {
-      fg[0] += CppAD::pow(fabs(vars[delta_start+t]-vars[delta_start+t+1]),2);
-      fg[0] += CppAD::pow(fabs(vars[a_start+t]-vars[a_start+t+1]),2);
+      fg[0] += 100*CppAD::pow(vars[delta_start+t]-vars[delta_start+t+1],2);
+      fg[0] += 100*CppAD::pow(vars[a_start+t]-vars[a_start+t+1],2);
     } 
+
+    //
+    // Setup Constraints
+    //
+    // NOTE: In this section you'll setup the model constraints.
 
     // Initial constraints
     //
@@ -77,7 +95,7 @@ class FG_eval {
 
 
       AD<double> x0 = vars[x_start + t - 1];
-      AD<double> y0 = vars[y_start + t - 1]      
+      AD<double> y0 = vars[y_start + t - 1];      
       AD<double> psi0 = vars[psi_start + t - 1];
       AD<double> v0 = vars[v_start + t - 1];
       AD<double> cte_0 = vars[cte_start + t - 1];
@@ -85,10 +103,17 @@ class FG_eval {
       AD<double> delta_0 = vars[delta_start + t - 1];
       AD<double> a_0 = vars[a_start + t - 1];
 
-      AD<double> f_0 = coeffs[0]+coeffs[1]*x; // y des
+      AD<double> f_0 = coeffs[0]+coeffs[1]*x0; // y des
       AD<double> psi_des = CppAD::atan(coeffs[1]); // psi des
 
-      // Model constraints
+      // Here's `x` to get you started.
+      // The idea here is to constraint this value to be 0.
+      //
+      // NOTE: The use of `AD<double>` and use of `CppAD`!
+      // This is also CppAD can compute derivatives and pass
+      // these to the solver.
+
+      // TODO: Setup the rest of the model constraints
       // xdot = x0 + cos(psi)*dt
       fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
       // ydot = y0 + sin(psi)*dt
@@ -100,12 +125,10 @@ class FG_eval {
       // ctedot = xtrackError0 + xtrackErrorRate
       // xtrackError0 = ydes - y0 (current xtrack error)
       // xtracKErrorRate = ydotError = v0*sin(epsi0)*dt
-      fg[1 + cte_start + t] = cte1 - ((f_0 - y0) + v0 * CppAD::sin((epsi0)) * dt);      
+      fg[1 + cte_start + t] = cte_1 - ((f_0 - y0) + v0 * CppAD::sin((epsi_0)) * dt);      
       // epsidot = (psi_des - psi0)+v0/Lf*delta*dt  
       fg[1 + epsi_start + t] = epsi_1 - ((psi_des - psi0) + v0/Lf*delta_0*dt);     
-
     }
-
   }
 };
 
@@ -117,7 +140,7 @@ MPC::~MPC() {}
 
 vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   bool ok = true;
-  size_t i;
+  //size_t i;
   typedef CPPAD_TESTVECTOR(double) Dvector;
 
   // TODO: Set the number of model variables (includes both states and inputs).
@@ -189,6 +212,15 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   //
   // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
   // creates a 2 element double vector.
+  vector <double> result;
 
-  return {solution.x[delta_start],   solution.x[a_start]};  
+  result.push_back(solution.x[delta_start]);
+  result.push_back(solution.x[a_start]);  
+
+  for (int i = 0; i < N-1; i++) {
+    result.push_back(solution.x[x_start+1+i]);
+    result.push_back(solution.x[y_start+1+i]);    
+  }
+
+  return result;  
 }

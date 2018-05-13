@@ -98,7 +98,18 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-          auto coeffs = polyfit(ptsx, ptsy, 1);        
+          Eigen::VectorXd fitx(ptsx.size());
+          Eigen::VectorXd fity(ptsy.size());
+         
+          for (size_t i = 0; i < ptsx.size(); i++)
+          {
+            fitx[i] = ptsx[i];
+            fity[i] = ptsy[i];            
+          }
+
+          //cout << "test" << endl;
+
+          auto coeffs = polyfit(fitx, fity, 1);        
           // The cross track error is calculated by evaluating at polynomial at x, f(x)
           // and subtracting y.
           double cte = polyeval(coeffs, px) - py;
@@ -107,17 +118,27 @@ int main() {
           double epsi = psi - atan(coeffs[1]);
         
           Eigen::VectorXd state(6);
-          state << x, y, psi, v, cte, epsi;
+          state << px, py, psi, v, cte, epsi;
 
           double steer_value;
           double throttle_value;
 
-          vector<double> optimal_U;
+          vector<double> result;
 
-          optimal_U = mpc.Solve(state,coeffs);   
+          result = mpc.Solve(state,coeffs);   
 
-          steer_value = optimal_U[0];
-          throttle_value = optimal_U[1];
+          steer_value = result[0]/deg2rad(25);
+          throttle_value = result[1];
+
+          std::cout << "x = " << px << std::endl;
+          std::cout << "y = " << py << std::endl;
+          std::cout << "psi = " << psi << std::endl;
+          std::cout << "v = " << v << std::endl;
+          std::cout << "cte = " << cte << std::endl;
+          std::cout << "epsi = " << epsi << std::endl;
+          std::cout << "delta = " << steer_value << std::endl;
+          std::cout << "a = " << throttle_value << std::endl;
+
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -132,6 +153,12 @@ int main() {
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
 
+          for (int i = 0; i < result.size()-2; i++)
+          {
+            mpc_x_vals.push_back(result[2+i]);
+            mpc_y_vals.push_back(result[3+i]);
+          }
+
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
 
@@ -139,6 +166,11 @@ int main() {
           vector<double> next_x_vals;
           vector<double> next_y_vals;
 
+          for (size_t i = 0; i < ptsx.size(); i++)
+          {
+            next_x_vals.push_back(ptsx[i]);
+            next_y_vals.push_back(ptsy[i]);            
+          }
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
 
