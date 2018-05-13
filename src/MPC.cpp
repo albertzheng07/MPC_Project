@@ -6,7 +6,7 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 20;
+size_t N = 10;
 double dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
@@ -50,21 +50,21 @@ class FG_eval {
 
     // Minimize reference error for t = 0 to t = N 
     for (int t = 0; t < N; t++) {
-      fg[0] += 10*CppAD::pow(vars[cte_start+t],2);
-      fg[0] += 5*CppAD::pow(vars[epsi_start+t],2);
-      fg[0] += 2*CppAD::pow(ref_v-vars[v_start+t],2);
+      fg[0] += 2500*CppAD::pow(vars[cte_start+t],2);
+      fg[0] += 2500*CppAD::pow(vars[epsi_start+t],2);
+      fg[0] += 1000*CppAD::pow(vars[v_start+t]-ref_v,2);
     }  
 
     // Minimize actuator inputs for t = 0 to t = N - 1
     for (int t = 0; t < N-1; t++) {
-      fg[0] += 100*CppAD::pow(vars[delta_start+t],2);
-      fg[0] += 10*CppAD::pow(vars[a_start+t],2);
+      fg[0] += 1000*CppAD::pow(vars[delta_start+t],2);
+      fg[0] += 5*CppAD::pow(vars[a_start+t],2);
     }  
 
     // Minimize actuator rate inputs for t = 0 to t = N - 2
     for (int t = 0; t < N-2; t++) {
-      fg[0] += 5*CppAD::pow(vars[delta_start+t]-vars[delta_start+t+1],2);
-      fg[0] += 1*CppAD::pow(vars[a_start+t]-vars[a_start+t+1],2);
+      fg[0] += 4000*CppAD::pow(vars[delta_start+t]-vars[delta_start+t+1],2);
+      fg[0] += 1000*CppAD::pow(vars[a_start+t]-vars[a_start+t+1],2);
     } 
 
     //
@@ -87,12 +87,11 @@ class FG_eval {
     // The rest of the constraints
     for (int t = 1; t < N; t++) {
       AD<double> x1 = vars[x_start + t];
-      AD<double> y1 = vars[x_start + t];
+      AD<double> y1 = vars[y_start + t];
       AD<double> psi1 = vars[psi_start + t];
       AD<double> v1 =   vars[v_start + t];
       AD<double> cte_1 = vars[cte_start + t];
       AD<double> epsi_1 = vars[epsi_start + t];
-
 
       AD<double> x0 = vars[x_start + t - 1];
       AD<double> y0 = vars[y_start + t - 1];      
@@ -103,17 +102,14 @@ class FG_eval {
       AD<double> delta_0 = vars[delta_start + t - 1];
       AD<double> a_0 = vars[a_start + t - 1];
 
-      // AD<double> f_0 = coeffs[0]+coeffs[1]*x0; // y des
-      // AD<double> psi_des = CppAD::atan(coeffs[1]); // psi des
-
       AD<double> f_0 = 0.0;
       for (int i = 0; i < coeffs.size(); i++) {
-        f_0 += coeffs[i] * CppAD::pow(x0, i);
+        f_0 += coeffs[i] * CppAD::pow(x0, i); // f0 = p0 + p1*x0 + p2*x0**2 // y des
       }
 
       AD<double> psi_des = 0.0;
       for (int i = 1; i < coeffs.size(); i++) {
-        psi_des += i*coeffs[i] * CppAD::pow(x0, i-1); // f'(x0)
+        psi_des += i*coeffs[i] * CppAD::pow(x0, i-1); // f'(x0) = p1 + 2*p2*x0  // psi des
       }
       psi_des = CppAD::atan(psi_des);
 
@@ -124,7 +120,8 @@ class FG_eval {
       // This is also CppAD can compute derivatives and pass
       // these to the solver.
 
-      // TODO: Setup the rest of the model constraints
+      // Add Model constraints, x(t+k+1) = A*x(t+k)+B*u(t+k)
+      // Kinematic Bicycle Model with augmented states of CTE and Psi Error
       // xdot = x0 + cos(psi)*dt
       fg[1 + x_start + t] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
       // ydot = y0 + sin(psi)*dt
@@ -134,8 +131,8 @@ class FG_eval {
       // vdot = v0 + a*dt
       fg[1 + v_start + t] = v1 - (v0 + a_0*dt);
       // ctedot = xtrackError0 + xtrackErrorRate
-      // xtrackError0 = ydes - y0 (current xtrack error)
-      // xtracKErrorRate = ydotError = v0*sin(epsi0)*dt
+      // CTE0 = ydes - y0 (current xtrack error)
+      // CTERate = ydotError = v0*sin(epsi0)*dt
       fg[1 + cte_start + t] = cte_1 - ((f_0 - y0) + v0 * CppAD::sin((epsi_0)) * dt);      
       // epsidot = (psi_des - psi0)+v0/Lf*delta*dt  
       fg[1 + epsi_start + t] = epsi_1 - ((psi_des - psi0) - v0/Lf*delta_0*dt);     
@@ -176,29 +173,24 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     vars[i] = 0;
   }
 
-  // vars[x_start] = x;
-  // vars[y_start] = y;
-  // vars[psi_start] = psi;
-  // vars[v_start] = v;
-  // vars[cte_start] = cte;
-  // vars[epsi_start] = epsi;
-
   Dvector vars_lowerbound(n_vars);
   Dvector vars_upperbound(n_vars);
   // TODO: Set lower and upper limits for variables.
-  // state variable limits set to arbitrary large value
+  // state variable limits set to arbitrary large value [x, y, psi, v, cte, psi]
   for (i = 0; i < delta_start; i++)
   {
     vars_lowerbound[i] = -1.0e4;
     vars_upperbound[i] = 1.0e4;
   }
 
+  // steering value bounds delta min, delta max
   for (i = delta_start; i < a_start; i++)
   {
     vars_lowerbound[i] = -0.436; // -25 deg
     vars_upperbound[i] = 0.436;  // 25 deg
   }
 
+  // throttle value bounds a min, a max
   for (i = a_start; i < n_vars; i++)
   {
     vars_lowerbound[i] = -1; 
@@ -271,16 +263,15 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // creates a 2 element double vector.
   vector <double> result;
 
+  // Actuator solution
   result.push_back(solution.x[delta_start]);
   result.push_back(solution.x[a_start]);  
 
+  // Vehicle trajectory solution at N steps 
   for (int i = 0; i < N; i++) {
     result.push_back(solution.x[x_start+i]);
     result.push_back(solution.x[y_start+i]);    
   }
-
-  // std::cout << "Solution delta " << solution.x[delta_start] << std::endl;
-  // std::cout << "Solution throttle " << solution.x[a_start] << std::endl;
 
   return result;  
 }

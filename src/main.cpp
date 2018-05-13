@@ -91,35 +91,28 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
-          v *= 0.447; // m/s
+          v *= 0.447; // convert m/s
           double steer_value = j[1]["steering_angle"];
           double throttle_value = j[1]["throttle"];
-          /*
-          * TODO: Calculate steering angle and throttle using MPC.
-          *
-          * Both are in between [-1, 1].
-          *
-          */
+
           Eigen::VectorXd fitx(ptsx.size());
           Eigen::VectorXd fity(ptsy.size());
          
           for (size_t i = 0; i < ptsx.size(); i++) // transform waypoints into vehicle body frame
           {
-            double dx = ptsx[i] - px;
+            double dx = ptsx[i] - px; // inertial coord frame error
             double dy = ptsy[i] - py;
-            fitx[i] =  cos(psi)*dx + sin(psi)*dy;
+            fitx[i] =  cos(psi)*dx + sin(psi)*dy; // rotate from inertial to vehicle body frame
             fity[i] =  -sin(psi)*dx + cos(psi)*dy;           
           }
-
-          //cout << "test" << endl;
 
           auto coeffs = polyfit(fitx, fity, 2); // fit the polynomial error in the vehicle body frame       
           double cte = coeffs[0]; // current xtrack error 
           // Due to the sign starting at 0, the orientation error is -f'(x).
-          // derivative of coeffs[0] + coeffs[1] * x -> coeffs[1]
+          // first derivative of coeffs[0] + coeffs[1] * x -> coeffs[1]
           double epsi = -atan(coeffs[1]);
         
-          // account for latency in propagating state equations with latency step
+          // account for latency by propagating state equations with latency dt
           double latency_dt = 0.1;
           double Lf = 2.67;
 
@@ -133,22 +126,10 @@ int main() {
           Eigen::VectorXd state(6);
           state << px_lat, py_lat, psi_lat, v_lat, cte_lat, epsi_lat;
 
-          vector<double> result;
-
-          result = mpc.Solve(state,coeffs);   
+          vector<double> result = mpc.Solve(state,coeffs);   
 
           steer_value = result[0]/deg2rad(25);
           throttle_value = result[1];
-
-          // std::cout << "x = " << px << std::endl;
-          // std::cout << "y = " << py << std::endl;
-          // std::cout << "psi = " << psi << std::endl;
-          // std::cout << "v = " << v << std::endl;
-          // std::cout << "cte = " << cte << std::endl;
-          // std::cout << "epsi = " << epsi << std::endl;
-          // std::cout << "delta = " << steer_value << std::endl;
-          // std::cout << "a = " << throttle_value << std::endl;
-
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -156,14 +137,14 @@ int main() {
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
 
-          //Display the MPC predicted trajectory 
+          //Display the MPC predicted trajectory from solver
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
 
-          for (int i = 0; i < result.size()-2; i++)
+          for (int i = 0; i < result.size()-2; i+=2)
           {
             mpc_x_vals.push_back(result[2+i]);
             mpc_y_vals.push_back(result[3+i]);
@@ -172,7 +153,7 @@ int main() {
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
 
-          //Display the waypoints/reference line
+          //Display the waypoints/reference line or desired trajectory
           vector<double> next_x_vals;
           vector<double> next_y_vals;
 
@@ -189,7 +170,7 @@ int main() {
 
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           // Latency
           // The purpose is to mimic real driving conditions where
           // the car does actuate the commands instantly.
