@@ -91,7 +91,9 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
-
+          v *= 0.447; // m/s
+          double steer_value = j[1]["steering_angle"];
+          double throttle_value = j[1]["throttle"];
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
@@ -101,27 +103,35 @@ int main() {
           Eigen::VectorXd fitx(ptsx.size());
           Eigen::VectorXd fity(ptsy.size());
          
-          for (size_t i = 0; i < ptsx.size(); i++)
+          for (size_t i = 0; i < ptsx.size(); i++) // transform waypoints into vehicle body frame
           {
-            fitx[i] = ptsx[i];
-            fity[i] = ptsy[i];            
+            double dx = ptsx[i] - px;
+            double dy = ptsy[i] - py;
+            fitx[i] =  cos(psi)*dx + sin(psi)*dy;
+            fity[i] =  -sin(psi)*dx + cos(psi)*dy;           
           }
 
           //cout << "test" << endl;
 
-          auto coeffs = polyfit(fitx, fity, 1);        
-          // The cross track error is calculated by evaluating at polynomial at x, f(x)
-          // and subtracting y.
-          double cte = polyeval(coeffs, px) - py;
+          auto coeffs = polyfit(fitx, fity, 1); // fit the polynomial error in the vehicle body frame       
+          double cte = coeffs[0]; // current xtrack error 
           // Due to the sign starting at 0, the orientation error is -f'(x).
           // derivative of coeffs[0] + coeffs[1] * x -> coeffs[1]
-          double epsi = psi - atan(coeffs[1]);
+          double epsi = -atan(coeffs[1]);
         
-          Eigen::VectorXd state(6);
-          state << px, py, psi, v, cte, epsi;
+          // account for latency in propagating state equations with latency step
+          double latency_dt = 0.1;
+          double Lf = 2.67;
 
-          double steer_value;
-          double throttle_value;
+          double px_lat = v * latency_dt;
+          double py_lat = 0;
+          double psi_lat = - v * steer_value * latency_dt / Lf;
+          double v_lat = v + throttle_value * latency_dt;
+          double cte_lat = cte + v * sin(epsi) * latency_dt;
+          double epsi_lat = epsi + psi_lat; 
+
+          Eigen::VectorXd state(6);
+          state << px_lat, py_lat, psi_lat, v_lat, cte_lat, epsi_lat;
 
           vector<double> result;
 
@@ -130,14 +140,14 @@ int main() {
           steer_value = result[0]/deg2rad(25);
           throttle_value = result[1];
 
-          std::cout << "x = " << px << std::endl;
-          std::cout << "y = " << py << std::endl;
-          std::cout << "psi = " << psi << std::endl;
-          std::cout << "v = " << v << std::endl;
-          std::cout << "cte = " << cte << std::endl;
-          std::cout << "epsi = " << epsi << std::endl;
-          std::cout << "delta = " << steer_value << std::endl;
-          std::cout << "a = " << throttle_value << std::endl;
+          // std::cout << "x = " << px << std::endl;
+          // std::cout << "y = " << py << std::endl;
+          // std::cout << "psi = " << psi << std::endl;
+          // std::cout << "v = " << v << std::endl;
+          // std::cout << "cte = " << cte << std::endl;
+          // std::cout << "epsi = " << epsi << std::endl;
+          // std::cout << "delta = " << steer_value << std::endl;
+          // std::cout << "a = " << throttle_value << std::endl;
 
 
           json msgJson;
@@ -168,8 +178,8 @@ int main() {
 
           for (size_t i = 0; i < ptsx.size(); i++)
           {
-            next_x_vals.push_back(ptsx[i]);
-            next_y_vals.push_back(ptsy[i]);            
+            next_x_vals.push_back(fitx[i]);
+            next_y_vals.push_back(fity[i]);            
           }
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
