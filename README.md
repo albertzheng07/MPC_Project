@@ -7,11 +7,49 @@ Self-Driving Car Engineer Nanodegree Program
 
 ## Implementation
 
+The definition of MPC in this case is solve the constrained finite-time optimal control problem:
+
+![equation](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Cbegin%7Balign%7D%20u%5E%7B*%7D_t%20%28x%28t%29%29%20%3A%3D%20%5Ctextup%7Bargmin%7D_%7Bu_%7Bt%7D%7D%20%5Csum_%7Bk%3D0%7D%5E%7BN-1%7D%20J%28x_%7Bt&plus;k%7D%2Cu_%7Bt&plus;k%7D%29%20%5Cnotag%20%5C%5C%20s.t.%20%5Cquad%20x_%7Bt%7D%20%3D%20x%28t%29%20%5Cnotag%20%5C%5C%20x_%7Bt&plus;k&plus;1%7D%20%3D%20f%28x_%7Bt&plus;k%7D%2Cu_%7Bt&plus;k%7D%29%20%5Cnotag%20%5C%5C%20x_%7Bmin%7D%20%5Cleq%20x_%7Bt&plus;k%7D%20%5Cleq%20x_%7Bmax%7D%20%5Cnotag%20%5C%5C%20u_%7Bmin%7D%20%5Cleq%20u_%7Bt&plus;k%7D%20%5Cleq%20u_%7Bmax%7D%20%5Cnotag%20%5Cend%7Balign%7D)
+
+Cost Function
+
+The cost function used is as follows:
+
+
+
+
 Model
 
-In order to use
+In order to use Model Predictive Control, a constraint of a system model is required to generate a predicted trajectory.  
 
-![https://latex.codecogs.com/gif.latex?y&space;=&space;x]
+The following equations represent the system dynamics assuming the kinematic bicycle model.
+
+The generic non-linear discrete system model takes the form of:
+
+![equation](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20x_%7Bk&plus;1%7D%20%3D%20f%28x_%7Bk%7D%2Cu_%7Bk%7D%29)
+
+In this case, the state vector is:
+
+![equation](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20x%20%3D%20%5Bp_%7Bx%7D%2C%20p_%7By%7D%2C%20%5Cpsi%2C%20v%2C%20cte%2C%20%5Cpsi_%7Be%7D%5D)
+
+The control vector is:
+
+![equation](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20u%20%3D%20%5B%5Cdelta%2C%20a%5D)
+
+The bicycle model is defined as follows:
+
+![equation](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Cbegin%7Balign%7D%20p_%7Bx_%7Bk&plus;1%7D%7D%20%3D%20p_%7Bx_%7Bk%7D%7D%20&plus;%20v_%7Bk%7D%20*%20cos%28%5Cpsi_%7Bk%7D*%5CDelta%7Bt%7D%29%20%5Cnotag%20%5C%5C%20p_%7By_%7Bk&plus;1%7D%7D%20%3D%20p_%7By_%7Bk%7D%7D%20&plus;%20v_%7Bk%7D%20*%20sin%28%5Cpsi_%7Bk%7D*%5CDelta%7Bt%7D%29%20%5Cnotag%20%5C%5C%20%5Cpsi_%7Bk&plus;1%7D%20%3D%20%5Cpsi_%7Bk%7D%20-%20%5Cfrac%7Bv_%7Bk%7D%7D%7BL_%7Bf%7D%7D*%5Cdelta*%5CDelta%7Bt%7D%20%5Cnotag%20%5C%5C%20v_%7Bk&plus;1%7D%20%3D%20v_%7Bk%7D%20&plus;%20a_%7Bk%7D*%5CDelta%7Bt%7D%20%5Cnotag%20%5C%5C%20cte_%7Bk&plus;1%7D%20%3D%20%28p_%7By_%7Bdes%7D%7D-p_%7By_%7Bk%7D%7D%29&plus;%20v_%7Bk%7D%20*%20sin%28%5Cpsi_%7Be_%7Bk%7D%7D*%5CDelta%7Bt%7D%29%20%5Cnotag%20%5C%5C%20%5Cpsi_%7Be_%7Bk&plus;1%7D%7D%20%3D%20%28%5Cpsi_%7Bdes%7D-%5Cpsi_%7Bk%7D%29%20-%20%5Cfrac%7Bv_%7Bk%7D%7D%7BL_%7Bf%7D%7D*%5Cdelta*%5CDelta%7Bt%7D%20%5Cnotag%20%5Cend%7Balign%7D)
+
+The desired commands are found using a polyfit of the reference trajectory and looking up the values at the current state.
+
+![equation](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Cbegin%7Balign%7D%20p_%7By_%7Bdes%7D%7D%20%3D%20polyfit%28p_%7Bx_%7Bdes%7D%7D%2Cp_%7By_%7Bdes%7D%7D%29_%7Bx_%7Bk%7D%7D%20%5Cnotag%20%5C%5C%20%5Cpsi_%7Bdes%7D%20%3D%20atan2%28%5Cfrac%7Bdp_%7By_%7Bdes%7D%7D%7D%7Bdp_%7Bx_%7Bdes%7D%7D%7D%29%20%5Cnotag%20%5Cend%7Balign%7D)
+
+State/Input Constraints
+
+
+Timestep and Horizon Length
+
+N was selected as 10 and dt as set as 0.1 In order to approximate the infinite time horizon sufficiently, a large enough time horizon was selected and verified through trial and error whether the horizon was a good enough approximation. In order to reduce the computational complexity without losing dynamics lost by discretization, a time step of 0.1 was selected.
 
 ---
 
