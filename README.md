@@ -1,6 +1,18 @@
 # CarND-Controls-MPC
 Self-Driving Car Engineer Nanodegree Program
 
+
+
+---
+
+## Implementation
+
+Model
+
+In order to use
+
+![https://latex.codecogs.com/gif.latex?y&space;=&space;x]
+
 ---
 
 ## Dependencies
