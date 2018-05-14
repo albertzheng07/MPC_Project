@@ -7,7 +7,7 @@ Self-Driving Car Engineer Nanodegree Program
 
 ## Implementation
 
-The definition of MPC in this case is solve the constrained finite-time optimal control problem:
+The definition of MPC in this case is to solve the constrained finite-time optimal control problem:
 
 ![equation](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Cbegin%7Balign%7D%20u%5E%7B*%7D_t%20%28x%28t%29%29%20%3A%3D%20%5Ctextup%7Bargmin%7D_%7Bu_%7Bt%7D%7D%20%5Csum_%7Bk%3D0%7D%5E%7BN-1%7D%20J%28x_%7Bt&plus;k%7D%2Cu_%7Bt&plus;k%7D%29%20%5Cnotag%20%5C%5C%20s.t.%20%5Cquad%20x_%7Bt%7D%20%3D%20x%28t%29%20%5Cnotag%20%5C%5C%20x_%7Bt&plus;k&plus;1%7D%20%3D%20f%28x_%7Bt&plus;k%7D%2Cu_%7Bt&plus;k%7D%29%20%5Cnotag%20%5C%5C%20x_%7Bmin%7D%20%5Cleq%20x_%7Bt&plus;k%7D%20%5Cleq%20x_%7Bmax%7D%20%5Cnotag%20%5C%5C%20u_%7Bmin%7D%20%5Cleq%20u_%7Bt&plus;k%7D%20%5Cleq%20u_%7Bmax%7D%20%5Cnotag%20%5Cend%7Balign%7D)
 
@@ -15,8 +15,9 @@ Cost Function
 
 The cost function used is as follows:
 
+![equation](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20%5Cbegin%7Balign%7D%20J%28x_%7Bt&plus;k%7D%2Cu_%7Bt&plus;k%7D%29%20%3D%20%28z_%7Bdes_%7Bt&plus;k%7D%7D-z_%7Bt&plus;k%7D%29%5E%7BT%7DQ%28z_%7Bdes_%7Bt&plus;k%7D%7D-z_%7Bt&plus;k%7D%29%20&plus;%20u_%7Bt&plus;k%7D%5E%7BT%7DRu_%7Bt&plus;k%7D%20&plus;%20%28u_%7Bt&plus;k&plus;1%7D-u_%7Bk%7D%29%5E%7BT%7DS%28u_%7Bt&plus;k&plus;1%7D-u_%7Bt&plus;k%7D%29%20%5Cnotag%20%5C%5C%20where%20%5Cquad%20Q%20%5Cin%5E%7Bn_%7Bmeas%7D%20%5Ctimes%20n_%7Bmeas%7D%7D%2C%20R%20%5Cin%5E%7Bn_%7Bcontrols%7D%20%5Ctimes%20n_%7Bcontrols%7D%7D%20%2C%20S%20%5Cin%5E%7Bn_%7Bcontrols%7D%20%5Ctimes%20n_%7Bcontrols%7D%7D%20%5Cnotag%20%5Cend%7Balign%7D)
 
-
+Q, R and S are diagonal matrices with diagonal values weighted on importance for the objective value
 
 Model
 
@@ -38,18 +39,34 @@ The control vector is:
 
 The bicycle model is defined as follows:
 
-![equation](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Cbegin%7Balign%7D%20p_%7Bx_%7Bk&plus;1%7D%7D%20%3D%20p_%7Bx_%7Bk%7D%7D%20&plus;%20v_%7Bk%7D%20*%20cos%28%5Cpsi_%7Bk%7D*%5CDelta%7Bt%7D%29%20%5Cnotag%20%5C%5C%20p_%7By_%7Bk&plus;1%7D%7D%20%3D%20p_%7By_%7Bk%7D%7D%20&plus;%20v_%7Bk%7D%20*%20sin%28%5Cpsi_%7Bk%7D*%5CDelta%7Bt%7D%29%20%5Cnotag%20%5C%5C%20%5Cpsi_%7Bk&plus;1%7D%20%3D%20%5Cpsi_%7Bk%7D%20-%20%5Cfrac%7Bv_%7Bk%7D%7D%7BL_%7Bf%7D%7D*%5Cdelta*%5CDelta%7Bt%7D%20%5Cnotag%20%5C%5C%20v_%7Bk&plus;1%7D%20%3D%20v_%7Bk%7D%20&plus;%20a_%7Bk%7D*%5CDelta%7Bt%7D%20%5Cnotag%20%5C%5C%20cte_%7Bk&plus;1%7D%20%3D%20%28p_%7By_%7Bdes%7D%7D-p_%7By_%7Bk%7D%7D%29&plus;%20v_%7Bk%7D%20*%20sin%28%5Cpsi_%7Be_%7Bk%7D%7D*%5CDelta%7Bt%7D%29%20%5Cnotag%20%5C%5C%20%5Cpsi_%7Be_%7Bk&plus;1%7D%7D%20%3D%20%28%5Cpsi_%7Bdes%7D-%5Cpsi_%7Bk%7D%29%20-%20%5Cfrac%7Bv_%7Bk%7D%7D%7BL_%7Bf%7D%7D*%5Cdelta*%5CDelta%7Bt%7D%20%5Cnotag%20%5Cend%7Balign%7D)
+![equation](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Cbegin%7Balign%7D%20p_%7Bx_%7Bk&plus;1%7D%7D%20%3D%20p_%7Bx_%7Bk%7D%7D%20&plus;%20v_%7Bk%7D%20*%20cos%28%5Cpsi_%7Bk%7D*%5CDelta%7Bt%7D%29%20%5Cnotag%20%5C%5C%20p_%7By_%7Bk&plus;1%7D%7D%20%3D%20p_%7By_%7Bk%7D%7D%20&plus;%20v_%7Bk%7D%20*%20sin%28%5Cpsi_%7Bk%7D*%5CDelta%7Bt%7D%29%20%5Cnotag%20%5C%5C%20%5Cpsi_%7Bk&plus;1%7D%20%3D%20%5Cpsi_%7Bk%7D%20-%20%5Cfrac%7Bv_%7Bk%7D%7D%7BL_%7Bf%7D%7D*%5Cdelta_%7Bk%7D*%5CDelta%7Bt%7D%20%5Cnotag%20%5C%5C%20v_%7Bk&plus;1%7D%20%3D%20v_%7Bk%7D%20&plus;%20a_%7Bk%7D*%5CDelta%7Bt%7D%20%5Cnotag%20%5C%5C%20cte_%7Bk&plus;1%7D%20%3D%20%28p_%7By_%7Bdes%7D%7D-p_%7By_%7Bk%7D%7D%29&plus;%20v_%7Bk%7D%20*%20sin%28%5Cpsi_%7Be_%7Bk%7D%7D*%5CDelta%7Bt%7D%29%20%5Cnotag%20%5C%5C%20%5Cpsi_%7Be_%7Bk&plus;1%7D%7D%20%3D%20%28%5Cpsi_%7Bdes%7D-%5Cpsi_%7Bk%7D%29%20-%20%5Cfrac%7Bv_%7Bk%7D%7D%7BL_%7Bf%7D%7D*%5Cdelta_%7Bk%7D*%5CDelta%7Bt%7D%20%5Cnotag%20%5Cend%7Balign%7D)
+
+
+State/Input Constraints
+
+The input constraints are set to the maximum steer angle of +/- 25 deg and +/- 1 for the throttle.
+
+Timestep and Horizon Length
+
+N was selected as 10 and dt as set as 0.1 In order to approximate the infinite time horizon sufficiently, a large enough time horizon was selected and verified through trial and error whether the horizon was a good enough approximation. In order to reduce the computational complexity without losing dynamics lost by discretization, a time step of 0.1 was selected.
+
+Waypoints
 
 The desired commands are found using a polyfit of the reference trajectory and looking up the values at the current state.
 
 ![equation](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Cbegin%7Balign%7D%20p_%7By_%7Bdes%7D%7D%20%3D%20polyfit%28p_%7Bx_%7Bdes%7D%7D%2Cp_%7By_%7Bdes%7D%7D%29_%7Bx_%7Bk%7D%7D%20%5Cnotag%20%5C%5C%20%5Cpsi_%7Bdes%7D%20%3D%20atan2%28%5Cfrac%7Bdp_%7By_%7Bdes%7D%7D%7D%7Bdp_%7Bx_%7Bdes%7D%7D%7D%29%20%5Cnotag%20%5Cend%7Balign%7D)
 
-State/Input Constraints
+The waypoints are preprocessed by transforming the points from the inertial frame to the vehicle body frame. Since the relative position error can be computed in the inertial frame, the position error can be transformed into the vehicle body frame. This is done as follows:
 
+![equation](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20%5Cbegin%7Balign%7D%20%5Cbegin%7Bbmatrix%7D%20p_I_%7Bx_%7Be%7D%7D%20%5C%5C%20p_I_%7By_%7Be%7D%7D%20%5Cend%7Bbmatrix%7D%20%3D%20%5Cbegin%7Bbmatrix%7D%20p_I_%7Bx_%7Bdes%7D%7D%20%5C%5C%20p_I_%7By_%7Bdes%7D%7D%20%5Cend%7Bbmatrix%7D%20-%20%5Cbegin%7Bbmatrix%7D%20p_I_%7Bx_%7Bvehicle%7D%7D%20%5C%5C%20p_I_%7By_%7Bvehicle%7D%7D%20%5Cend%7Bbmatrix%7D%20%5Cnotag%20%5C%5C%20%5Cbegin%7Bbmatrix%7D%20p_B_%7Bx_%7Be%7D%7D%20%5C%5C%20p_B_%7By_%7Be%7D%7D%20%5Cend%7Bbmatrix%7D%20%3D%20%5Cbegin%7Bbmatrix%7D%20cos%28%5Cpsi%29%20%26%20sin%28%5Cpsi%29%20%5C%5C%20-sin%28%5Cpsi%29%20%26%20cos%28%5Cpsi%29%20%5Cend%7Bbmatrix%7D%20%5Cbegin%7Bbmatrix%7D%20p_I_%7Bx_%7Be%7D%7D%20%5C%5C%20p_I_%7By_%7Be%7D%7D%20%5Cnotag%20%5Cend%7Bbmatrix%7D%20%5Cend%7Balign%7D)
 
-Timestep and Horizon Length
+Latency
 
-N was selected as 10 and dt as set as 0.1 In order to approximate the infinite time horizon sufficiently, a large enough time horizon was selected and verified through trial and error whether the horizon was a good enough approximation. In order to reduce the computational complexity without losing dynamics lost by discretization, a time step of 0.1 was selected.
+The latency is accounted for by applying an additional state update before sending the updated current state to the solver. The additional update step uses the time dependent action as part of the system equations and adds it to the current state using the current control input.
+
+This is shown as follows:
+
+![equation](https://latex.codecogs.com/gif.latex?%5Cbg_white%20%5Clarge%20%5Cbegin%7Balign%7D%20p_B_%7Bx_%7Bk%7D%7D%20%3D%20v_%7Bk%7D%20*%5CDelta%7Bt_%7Blatency%7D%7D%29%20%5Cnotag%20%5C%5C%20p_B_%7By_%7Bk%7D%7D%20%3D%200%20%5Cnotag%20%5C%5C%20%5Cpsi_%7Bk%7D%20%5Cmathrel%7B&plus;%7D%3D%20-%20%5Cfrac%7Bv_%7Bk%7D%7D%7BL_%7Bf%7D%7D*%5Cdelta_%7Bk%7D*%5CDelta%7Bt_%7Blatency%7D%7D%20%5Cnotag%20%5C%5C%20v_%7Bk%7D%20%5Cmathrel%7B&plus;%7D%3D%20a_%7Bk%7D*%5CDelta%7Bt_%7Blatency%7D%7D%20%5Cnotag%20%5C%5C%20cte_%7Bk%7D%20%5Cmathrel%7B&plus;%7D%3D%20v_%7Bk%7D%20*%20sin%28%5Cpsi_%7Be_%7Bk%7D%7D*%5CDelta%7Bt_%7Blatency%7D%7D%29%20%5Cnotag%20%5C%5C%20%5Cpsi_%7Be_%7Bk%7D%7D%20%5Cmathrel%7B&plus;%7D%3D%20-%20%5Cfrac%7Bv_%7Bk%7D%7D%7BL_%7Bf%7D%7D*%5Cdelta_%7Bk%7D*%5CDelta%7Bt_%7Blatency%7D%7D%20%5Cnotag%20%5Cend%7Balign%7D)
 
 ---
 
