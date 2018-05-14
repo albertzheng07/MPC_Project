@@ -21,7 +21,7 @@ double dt = 0.1;
 // This is the length from front to CoG that has a similar radius.
 const double Lf = 2.67;
 
-double ref_v = 20;
+double ref_v = 15;
 
 size_t x_start = 0;
 size_t y_start = x_start + N;
@@ -50,20 +50,21 @@ class FG_eval {
 
     // Minimize reference error for t = 0 to t = N 
     for (int t = 0; t < N; t++) {
-      fg[0] += 2500*CppAD::pow(vars[cte_start+t],2);
-      fg[0] += 2500*CppAD::pow(vars[epsi_start+t],2);
-      fg[0] += 1000*CppAD::pow(vars[v_start+t]-ref_v,2);
+      fg[0] += 2000*CppAD::pow(vars[cte_start+t],2);
+      fg[0] += 2000*CppAD::pow(vars[epsi_start+t],2);
+      fg[0] += 100*CppAD::pow(vars[v_start+t]-ref_v,2);
     }  
 
     // Minimize actuator inputs for t = 0 to t = N - 1
     for (int t = 0; t < N-1; t++) {
-      fg[0] += 1000*CppAD::pow(vars[delta_start+t],2);
-      fg[0] += 5*CppAD::pow(vars[a_start+t],2);
+      fg[0] += 4000*CppAD::pow(vars[delta_start+t],2);
+      fg[0] += 1000*CppAD::pow(vars[a_start+t],2);
+      fg[0] += 2000*CppAD::pow(vars[delta_start+t]*vars[a_start+t],2);
     }  
 
     // Minimize actuator rate inputs for t = 0 to t = N - 2
     for (int t = 0; t < N-2; t++) {
-      fg[0] += 4000*CppAD::pow(vars[delta_start+t]-vars[delta_start+t+1],2);
+      fg[0] += 1000*CppAD::pow(vars[delta_start+t]-vars[delta_start+t+1],2);
       fg[0] += 1000*CppAD::pow(vars[a_start+t]-vars[a_start+t+1],2);
     } 
 
